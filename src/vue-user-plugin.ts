@@ -2,63 +2,118 @@
  *   Copyright (c) 2021
  *   All rights reserved.
  */
-import { User as FirebaseUser } from "firebase/auth";
-import {CallbackController} from "./callbacks.js";
+import { User as FirebaseUser, Auth } from "firebase/auth";
+import {Callback, CallbackController} from "./callbacks.js";
+import {App as VueApp} from "vue";
 
-interface IVueUserPlugin {
-    user: FirebaseUser | null;
+interface UserWrapper<T> {
+    firebaseUser: FirebaseUser | null;
+    model: T | null;
+    loggedIn: boolean;
 }
 
-/**
- * Makes Firebase.auth.currentUser accessible across every vue instance via user
- * Call Vue.use(VueUserPlugin, { auth: firebase.auth() }) to install
- */
-export const VueUserPlugin: IVueUserPlugin = {
-    user: null,
-    onUserModelChangedCallbacks: new CallbackController(),
-    onAuthStateChangedCallbacks: new CallbackController(),
+type PluginCallbackData<T, ExtendedFrom> = ExtendedFrom & {
+    plugin: VueUserPlugin<T>;
+};
+
+type ModelBuilder<T> = (user: FirebaseUser) => T;
+
+class VueUserPlugin<T> {
+    auth: Auth;
+    user: UserWrapper<T>;
+    modelBuilder?: ModelBuilder<T>;
+    onUserModelChangedCallbacks: CallbackController< PluginCallbackData<T, UserWrapper<T>> >;
+    onAuthStateChangedCallbacks: CallbackController< PluginCallbackData<T, Auth> >;
+
+    constructor(auth: Auth, modelBuilder?: ModelBuilder<T>) {
+        this.auth = auth;
+        this.modelBuilder = modelBuilder;
+        this.user = {
+            firebaseUser: null,
+            model: null,
+            loggedIn: false
+        };
+        this.onUserModelChangedCallbacks = new CallbackController();
+        this.onAuthStateChangedCallbacks = new CallbackController();
+    }
+
+    listen() {
+        // Listen for changes to the auth state
+        this.auth.onAuthStateChanged(async (userAuth) => {
+            if(userAuth) {
+                this.updateUserAuth(userAuth);
+                if(this.modelBuilder) {
+                    const model = await Promise.resolve( this.modelBuilder(userAuth) );
+                    return this.updateModel(model);
+                }
+            } else {
+                this.updateUserAuth(null);
+                if(this.modelBuilder) {
+                    return this.updateModel(null);
+                }
+            }
+        });
+    }
 
     runUserModelChangedCallbacks() {
         return this.onUserModelChangedCallbacks.run(this.user, cb => {
             cb.vm.user = this.user;
         });
-    },
+    }
 
     runAuthStateChangedCallbacks() {
-        return this.onAuthStateChangedCallbacks.run(this.user.auth(), cb => {
-            cb.vm.loggedIn = this.user.loggedIn;
+        return this.onAuthStateChangedCallbacks.run(this.user, cb => {
+            cb.vm.loggedIn = !!this.user;
         });
-    },
+    }
 
     /**
      * Allows VueUserPlugin to act as a stand-in for Auth in VueFirebaseAuthPlugin
      * Which enables you to use the transformed user in
      * @param {*} cb
      */
-    onAuthStateChanged(cb) {
+    onAuthStateChanged(cb: Callback<UserWrapper<T>>) {
         if(this.user) {
             cb(this.user);
         } else {
-            plugin.onUserModelChangedCallbacks.add(cb, {
-                vm: this,
+            this.onUserModelChangedCallbacks.add(cb, {
                 once: false
             });
         }
-    },
+    }
 
+    updateUserAuth(user: FirebaseUser | null) {
+        this.user.firebaseUser = user;
+        this.user.loggedIn = !!user;
+        this.runAuthStateChangedCallbacks();
+    }
+
+    updateModel(model: T | null) {
+        this.user.model = model;
+        this.runUserModelChangedCallbacks();
+    };
+
+
+
+}
+
+interface VueUserPluginInstallOptions {
+    auth: Auth,
+    modelBuilder: (user: FirebaseUser) => any
+}
+
+/**
+ * Makes Firebase.auth.currentUser accessible across every vue instance via user
+ * Call Vue.use(VueUserPlugin, { auth: firebase.auth() }) to install
+ */
+export const VueUserPluginBootstrapper = {
     /**
      *
-     * @param {*} Vue
+     * @param {*} app
      * @param {*} options - auth, modelBuilder; where the modelBuilder function returns some sort of data structure associated with the user
      */
-    install: function(Vue, {auth, modelBuilder}) {
-        var plugin = this;
-        this.user = {
-            auth: () => null,
-            authData: null,
-            model: null,
-            loggedIn: false
-        };
+    install: function<T>(app: VueApp, {auth, modelBuilder}: VueUserPluginInstallOptions) {
+        var plugin = new VueUserPlugin<T>(auth);
 
         Object.defineProperty(plugin, "currentUser", {
             get() {
@@ -66,43 +121,8 @@ export const VueUserPlugin: IVueUserPlugin = {
             }
         });
 
-        var updateUserAuth = (userAuth) => {
-            this.user.auth = () => userAuth;
-            if(userAuth) {
-                var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
-                this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
-                this.user.loggedIn = true;
-            } else {
-                this.user.authData = null;
-                this.user.loggedIn = false;
-            }
-            this.runAuthStateChangedCallbacks();
-        };
 
-        var updateModel = (model) => {
-            this.user.model = model;
-            this.runUserModelChangedCallbacks();
-        };
-
-        // Listen for changes to the auth state
-        auth.onAuthStateChanged((userAuth) => {
-            if(userAuth) {
-                updateUserAuth(userAuth);
-                if(modelBuilder) {
-                    return Promise.resolve( modelBuilder(userAuth) )
-                        .then(model => {
-                            updateModel(model);
-                        });
-                }
-            } else {
-                updateUserAuth(null);
-                if(modelBuilder) {
-                    updateModel(null);
-                }
-            }
-        });
-
-        Vue.mixin({
+        app.mixin({
             data() {
                 return {
                     user: null
@@ -114,22 +134,16 @@ export const VueUserPlugin: IVueUserPlugin = {
                 }
             },
             mounted: function() {
-                this.auth = auth;
                 if(this.$options.onAuthStateChanged) {
-                    plugin.onAuthStateChangedCallbacks.add(this.$options.onAuthStateChanged, {
-                        vm: this
-                    });
+                    plugin.onAuthStateChangedCallbacks.add(this.$options.onAuthStateChanged);
                 }
                 if(this.$options.userModelChanged) {
                     if(!modelBuilder) {
                         console.warn(`[WARN] userModelChanged hook won't be called since no modelBuilder was provided to VueUserPlugin.`)
                     }
-                    plugin.onUserModelChangedCallbacks.add(this.$options.userModelChanged, {
-                        vm: this
-                    });
+                    plugin.onUserModelChangedCallbacks.add(this.$options.userModelChanged);
                 } else {
-                    plugin.onUserModelChangedCallbacks.add(null, {
-                        vm: this,
+                    plugin.onUserModelChangedCallbacks.add(this.$options.userModelChanged, {
                         once: true
                     });
                 }
