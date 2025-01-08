@@ -1,5 +1,5 @@
 /*
- *   Copyright (c) 2021
+ *   Copyright (c) 2021 to 2025
  *   All rights reserved.
  */
 import { User as FirebaseUser, Auth } from "firebase/auth";
@@ -114,13 +114,7 @@ export const VueUserPluginBootstrapper = {
      */
     install: function<T>(app: VueApp, {auth, modelBuilder}: VueUserPluginInstallOptions) {
         var plugin = new VueUserPlugin<T>(auth);
-
-        Object.defineProperty(plugin, "currentUser", {
-            get() {
-                return auth.currentUser;
-            }
-        });
-
+        plugin.listen();
 
         app.mixin({
             data() {
