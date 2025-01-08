@@ -146,4 +146,4 @@ export const VueUserPluginBootstrapper = {
     }
 };
 
-export default VueUserPlugin;
+export default VueUserPluginBootstrapper;
