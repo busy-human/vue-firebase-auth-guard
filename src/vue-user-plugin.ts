@@ -4,7 +4,7 @@
  */
 import { User as FirebaseUser, Auth } from "firebase/auth";
 import {Callback, CallbackController} from "./callbacks.js";
-import {App as VueApp} from "vue";
+import {App as VueApp, Plugin} from "vue";
 
 interface UserWrapper<T> {
     firebaseUser: FirebaseUser | null;
@@ -106,7 +106,7 @@ interface VueUserPluginInstallOptions {
  * Makes Firebase.auth.currentUser accessible across every vue instance via user
  * Call Vue.use(VueUserPlugin, { auth: firebase.auth() }) to install
  */
-export const VueUserPluginBootstrapper = {
+export const VueUserPluginBootstrapper: Plugin = {
     /**
      *
      * @param {*} app
