@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "allowSyntheticDefaultImports": true,
+        "rootDir": "src",
+        "checkJs": true,
+        "composite": true,
+        "skipLibCheck": true,
+        "outDir": "dist",
+        "sourceMap": true,
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
+        "resolvePackageJsonExports": false,
+        "paths": {
+            "@/*": ["./src/*"]
+        }
+    },
+    "include": [ "src" ]
+}

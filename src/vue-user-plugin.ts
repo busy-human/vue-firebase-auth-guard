@@ -1,16 +1,19 @@
 /*
- *   Copyright (c) 2021 
+ *   Copyright (c) 2021
  *   All rights reserved.
  */
-import Promise from "bluebird";
+import { User as FirebaseUser } from "firebase/auth";
+import {CallbackController} from "./callbacks.js";
 
-const {CallbackController} = require("./callbacks.js");
+interface IVueUserPlugin {
+    user: FirebaseUser | null;
+}
 
 /**
  * Makes Firebase.auth.currentUser accessible across every vue instance via user
  * Call Vue.use(VueUserPlugin, { auth: firebase.auth() }) to install
  */
-export const VueUserPlugin = {
+export const VueUserPlugin: IVueUserPlugin = {
     user: null,
     onUserModelChangedCallbacks: new CallbackController(),
     onAuthStateChangedCallbacks: new CallbackController(),
@@ -29,8 +32,8 @@ export const VueUserPlugin = {
 
     /**
      * Allows VueUserPlugin to act as a stand-in for Auth in VueFirebaseAuthPlugin
-     * Which enables you to use the transformed user in 
-     * @param {*} cb 
+     * Which enables you to use the transformed user in
+     * @param {*} cb
      */
     onAuthStateChanged(cb) {
         if(this.user) {
@@ -39,13 +42,13 @@ export const VueUserPlugin = {
             plugin.onUserModelChangedCallbacks.add(cb, {
                 vm: this,
                 once: false
-            });          
+            });
         }
     },
 
     /**
-     * 
-     * @param {*} Vue 
+     *
+     * @param {*} Vue
      * @param {*} options - auth, modelBuilder; where the modelBuilder function returns some sort of data structure associated with the user
      */
     install: function(Vue, {auth, modelBuilder}) {
@@ -96,7 +99,7 @@ export const VueUserPlugin = {
                 if(modelBuilder) {
                     updateModel(null);
                 }
-            }      
+            }
         });
 
         Vue.mixin({
@@ -123,7 +126,7 @@ export const VueUserPlugin = {
                     }
                     plugin.onUserModelChangedCallbacks.add(this.$options.userModelChanged, {
                         vm: this
-                    });            
+                    });
                 } else {
                     plugin.onUserModelChangedCallbacks.add(null, {
                         vm: this,
