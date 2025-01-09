@@ -1,20 +1,23 @@
-import { onAuthStateChanged, User, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as logOut, sendPasswordResetEmail, ParsedToken, getIdTokenResult, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
-import { computed, ref } from "vue";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { FirebaseError } from "@firebase/util";
 import { MainAuth, assertMainAuth } from "./auth-state";
 
 class PhoneNumberAuthenticatorClass {
+    private recaptchaTargetElement?: HTMLElement | string | null;
     recaptchaVerifier : RecaptchaVerifier | null;
-    recaptchaTargetElement: HTMLElement | string | null;
     confirmationResult: ConfirmationResult | null;
     recaptchaWidgetId: number | null;
 
-    constructor(recaptchaTargetElement: HTMLElement | string) {
+    constructor(recaptchaTargetElement?: HTMLElement | string) {
         this.recaptchaTargetElement = recaptchaTargetElement;
         this.recaptchaWidgetId = null;
         this.recaptchaVerifier = null;
         this.confirmationResult = null;
     }
+    setRecaptchaTargetElement(element: HTMLElement | string | null){
+        this.recaptchaTargetElement = element;
+    }
+
     async submitPhoneNumber(phoneNumber: string){
         assertMainAuth();
 
