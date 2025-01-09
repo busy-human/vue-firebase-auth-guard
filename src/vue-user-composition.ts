@@ -75,6 +75,10 @@ function install(auth: Auth) {
     initialize(auth);
 }
 
+export function useVueUserComposition() {
+    return VueUserComposition;
+}
+
 export const VueUserComposition = {
     install       : install,
     user          : globals.user,
