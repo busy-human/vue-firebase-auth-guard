@@ -1,11 +1,10 @@
-import { Ref } from './../node_modules/@vue/reactivity/dist/reactivity.d';
 /*
  *   Copyright (c) 2021 Busy Human LLC
  *   All rights reserved.
  *   This file, its contents, concepts, methods, behavior, and operation  (collectively the "Software") are protected by trade secret, patent,  and copyright laws. The use of the Software is governed by a license  agreement. Disclosure of the Software to third parties, in any form,  in whole or in part, is expressly prohibited except as authorized by the license agreement.
  */
 import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
-import {ref, readonly, DeepReadonly} from "vue";
+import { Ref, ref, readonly, DeepReadonly} from "vue";
 import {CallbackController} from "./callbacks.js";
 import { MainAuth, assertMainAuth } from "./auth-state.js";
 
