@@ -116,6 +116,21 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
+    findMatchTypeName<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken, hint?: K): K | null {
+
+        if(hint && this.checkTypeWithMatcher(user, claims, this.map[hint].matcher)) {
+            return hint;
+
+        } else {
+            for(const key in this.map) {
+                if(this.checkTypeWithMatcher(user, claims, this.map[key].matcher)) {
+                    return key as unknown as K;
+                }
+            }
+            throw new Error(`No user model found for user ${user.uid}`);
+        }
+    }
+
     resolve<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken,  hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
         let match = this.findMatch(user, claims, hint);
         if(!match) {

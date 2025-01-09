@@ -6,6 +6,7 @@ import { CallbackController, Callback } from "./callbacks.js";
 interface AuthStateCallbackData<TypeMap extends UserModelMap> {
     firebaseUser: FirebaseUser | null;
     userModel: TypeMap[any] | null;
+    userType: keyof TypeMap | null;
     claims: CustomClaimsToken | null;
     loggedIn: boolean;
     hasCheckedForSession: boolean;
@@ -29,6 +30,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     firebaseUser                : FirebaseUser | null;
     userModel                   : TypeMap[any] | null;
     claims                      : CustomClaimsToken | null;
+    userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
     hasCheckedForSession        : boolean = false;
     private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap>>;
@@ -39,6 +41,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.userModel = null;
         this.resolver = resolver;
         this.claims = null;
+        this.userType = null;
         this.onAuthStateChangedCallbacks = new CallbackController<AuthStateCallbackData<TypeMap>>();
     }
 
@@ -50,11 +53,28 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         return {
             firebaseUser         : this.firebaseUser,
             userModel            : this.userModel,
+            userType             : this.userType,
             claims               : this.claims,
             loggedIn             : this.loggedIn,
             hasCheckedForSession : this.hasCheckedForSession,
             eventName            : eventName,
         };
+    }
+
+    async resolveUserModel() {
+        if(this.resolver && this.firebaseUser && this.claims) {
+
+            this.userType = await this.resolver.findMatchTypeName(this.firebaseUser, this.claims);
+            if(!this.userType) {
+                throw new Error(`No user model found for user ${this.firebaseUser.uid}`);
+            }
+            this.userModel = await this.resolver.resolve(this.firebaseUser, this.claims, this.userType);
+        } else {
+            this.userType = null;
+            this.userModel = null;
+        }
+
+        return this.userModel;
     }
 
     startListener() {
@@ -65,9 +85,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 if(user) {
                     this.firebaseUser = user;
                     this.claims = (await user.getIdTokenResult()).claims;
-                    if(this.resolver) {
-                        this.userModel = await this.resolver.resolve(user, this.claims);
-                    }
+                    this.resolveUserModel();
                     eventName = "authenticated";
                 } else {
                     this.firebaseUser = null;

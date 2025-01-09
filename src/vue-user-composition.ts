@@ -7,7 +7,7 @@ import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "fi
 import {ref, Ref} from "vue";
 import {Callback, CallbackController} from "./callbacks.js";
 import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
-import { MainAuth, initializeAuthState } from "./auth-state.js";
+import { MainAuth, assertMainAuth, initializeAuthState } from "./auth-state.js";
 
 // Authentication Lifecycle
 
@@ -18,6 +18,7 @@ interface IGlobals {
     claims       : Ref<CustomClaimsToken | null>;
     authReady    : Ref<boolean>;
     uid          : Ref<string | null>;
+    userType     : Ref<string | null>;
     authenticated: Ref<boolean>;
     onAuth       : CallbackController<any>;
     onUnauth     : CallbackController<any>;
@@ -32,14 +33,15 @@ const globals: IGlobals = {
     claims        : ref(null),
     authReady     : ref(false),
     uid           : ref(null),
+    userType      : ref(null),
     onAuth        : new CallbackController(),
     onUnauth      : new CallbackController(),
     onAuthChecked : new CallbackController()
 };
 
 
-function initialize(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
-    initializeAuthState(auth, resolver);
+function initialize() {
+    assertMainAuth();
 
     if(!globals.initialized) {
         globals.initialized   = true;
@@ -49,6 +51,7 @@ function initialize(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
         globals.claims        = ref(null);
         globals.authReady     = ref(false);
         globals.uid           = ref(null);
+        globals.userType      = ref(null);
 
         MainAuth.onChange((userAuth) => {
             globals.user.value = userAuth.firebaseUser;
@@ -57,6 +60,7 @@ function initialize(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
             globals.claims.value = userAuth.claims;
             globals.uid.value = userAuth.firebaseUser?.uid || null;
             globals.authReady.value = true;
+            globals.userType.value = userAuth.userType as string;
 
             if(userAuth.loggedIn) {
                 globals.onAuth.run(globals.user.value);
@@ -74,12 +78,13 @@ export const VueUserComposition = {
     claims        : globals.claims,
     authReady     : globals.authReady,
     uid           : globals.uid,
+    userType      : globals.userType,
     onAuth        : (cb: Callback<FirebaseUser>) => globals.onAuth.add(cb),
     onUnauth      : (cb: Callback<void>) => globals.onUnauth.add(cb),
     onAuthChecked : (cb: Callback<FirebaseUser|null>) => globals.onAuthChecked.add(cb)
 };
 
-export function useVueUserComposition(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
-    initialize(auth, resolver);
+export function useVueUserComposition() {
+    initialize();
     return VueUserComposition;
 }
