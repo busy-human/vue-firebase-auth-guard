@@ -22,7 +22,7 @@ export interface UserModelMap {
 }
 
 
-class UserModelResolver<TypeMap extends UserModelMap> {
+export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
 
     constructor(map: TypeMap) {
@@ -101,8 +101,8 @@ class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
-    async findMatch<K extends keyof TypeMap>(user: FirebaseUser, hint?: K): Promise<TypeMap[K] | TypeMap[keyof TypeMap] | null> {
-        let claims = (await user.getIdTokenResult()).claims;
+    findMatch<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken, hint?: K): TypeMap[K] | TypeMap[keyof TypeMap] | null {
+
         if(hint && this.checkTypeWithMatcher(user, claims, this.map[hint].matcher)) {
             return this.map[hint];
 
@@ -116,12 +116,17 @@ class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
-    async resolve<K extends keyof TypeMap>(user: FirebaseUser, hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
-        let match = await this.findMatch(user, hint);
+    resolve<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken,  hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
+        let match = this.findMatch(user, claims, hint);
         if(!match) {
             throw new Error(`No user model found for user ${user.uid}`);
         }
-        return match.builder(user, (await user.getIdTokenResult()).claims);
+        return match.builder(user, claims);
+    }
+
+    async getClaimsAndResolve<K extends keyof TypeMap>(user: FirebaseUser, hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
+        let claims = (await user.getIdTokenResult()).claims;
+        return this.resolve(user, claims, hint);
     }
 }
 

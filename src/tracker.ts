@@ -2,6 +2,7 @@ import { Auth, User as FirebaseUser } from "firebase/auth";
 import { Router, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, NavigationGuardNext, RouteLocationResolvedGeneric } from "vue-router";
 import { CallbackController, Callback } from "./callbacks.js";
 import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta} from "./types.js";
+import { MainAuth } from "./auth-state.js";
 
 function resolveOptions(defaults: AuthGuardOptions, overrides: AuthGuardOptions) {
     return Object.assign({}, defaults, overrides);
@@ -17,16 +18,12 @@ type ResumeRoutingCallbackOptions = {
 
 export class AuthGuardTracker {
     router                      : Router;
-    auth                        : Auth;
     config                      : AuthGuardOptions = AUTH_DEFAULTS;
-    hasCheckedForSession        : boolean = false;
     deferredRouting?            : DeferredRouting;
-    user?                       : FirebaseUser | null;
     onCheckedForSessionCallbacks: CallbackController<ResumeRoutingCallbackOptions>;
 
     constructor(options: AuthGuardTrackerOptions) {
         this.router = options.router;
-        this.auth = options.auth;
         this.onCheckedForSessionCallbacks = new CallbackController();
         this.config = resolveOptions(AUTH_DEFAULTS, options);
 
@@ -40,7 +37,7 @@ export class AuthGuardTracker {
     }
     resolvePostAuthPath() {
         if (typeof this.config.postAuthPath === "function") {
-            return Promise.resolve(this.config.postAuthPath(this.router, this.user));
+            return Promise.resolve(this.config.postAuthPath(this.router, MainAuth.firebaseUser));
         } else {
             return Promise.resolve(this.config.postAuthPath);
         }
@@ -70,16 +67,16 @@ export class AuthGuardTracker {
         this.router.push(path);
     }
     async resumeRouting() {
-        if (this.deferredRouting && (this.isPublicRoute(this.deferredRouting.to) || this.auth.currentUser)) {
+        if (this.deferredRouting && (this.isPublicRoute(this.deferredRouting.to) || MainAuth.loggedIn)) {
             console.log("Resuming attempted routing");
             var rt = this.deferredRouting;
             delete this.deferredRouting;
-            if (this.user && this.isLoginPage(rt.to)) {
+            if (MainAuth.loggedIn && this.isLoginPage(rt.to)) {
                 await this.pushToPostAuthPath();
             } else {
                 this.resolvePath(rt.to, rt.from, rt.next);
             }
-        } else if (this.auth.currentUser) {
+        } else if (MainAuth.loggedIn) {
             console.log("Router: User logged in");
             await this.pushToPostAuthPath();
             this.onCheckedForSessionCallbacks.run({ router: this.router });
@@ -116,10 +113,9 @@ export class AuthGuardTracker {
      */
     resolvePath( to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) {
         var toPath = to.path || to;
-        var fromPath = from.path || from;
 
         var requiresAuth = this.isAuthenticatedRoute(toPath);
-        var authorizedToView = !requiresAuth || this.auth.currentUser;
+        var authorizedToView = !requiresAuth || MainAuth.loggedIn;
 
         if (authorizedToView) {
             next();

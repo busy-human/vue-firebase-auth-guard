@@ -1,5 +1,6 @@
 import {NavigationGuardNext, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, RouteMeta, Router} from "vue-router";
 import {Auth, User as FirebaseUser} from "firebase/auth";
+import { UserModelResolver, UserModelMap } from "./user-model-resolver.js";
 
 export interface AuthGuardOptions {
     /** This is the path to send users to, to login */
@@ -13,11 +14,13 @@ export interface AuthGuardOptions {
 
     /** If a route isn't listed as 'auth' or 'public', assume this by default: */
     assumeIfUndefined: string;
+
+    /** The resolver for the user model (aka userspace) */
+    modelResolver?: UserModelResolver<UserModelMap>;
 }
 
-export type AuthGuardTrackerOptions = AuthGuardOptions & {
+export type AuthGuardTrackerOptions = Omit<AuthGuardOptions, "modelResolver"> & {
     router: Router;
-    auth: Auth;
 }
 
 export interface DeferredRouting {

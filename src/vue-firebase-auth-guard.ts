@@ -2,35 +2,33 @@ import {Router} from "vue-router";
 import {Auth} from "firebase/auth";
 import { AuthGuardOptions } from "./types.js";
 import { AuthGuardTracker } from "./tracker.js";
+import { MainAuth, initializeAuthState } from "./auth-state.js";
 
 class AuthGuardClass {
     install(router: Router, auth: Auth, options: AuthGuardOptions) {
         const guard = new AuthGuardTracker({
             ...options,
-            router,
-            auth
+            router
         });
 
-        /**
-         * Listen for changes to the user. The first event on this represents a successful session check
-         */
-        auth.onAuthStateChanged(async (user) => {
-            guard.user = user;
+        initializeAuthState(auth, options.modelResolver);
 
-            if (!guard.hasCheckedForSession) {
-                guard.hasCheckedForSession = true;
+        MainAuth.onChange((data) => {
+            if (!data.hasCheckedForSession) {
                 guard.resumeRouting();
-            } else if (user && guard.isPublicRoute(router.currentRoute.value.path)) {
-                // The user just logged in / signed up
+
+            } else if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path)) {
+                // The data.loggedIn just logged in / signed up
                 guard.pushToPostAuthPath();
-            } else if (!user) {
+
+            } else if (!data.loggedIn) {
                 // The user just logged out / signed out
                 router.push(guard.config.publicLanding);
             }
         });
 
         router.beforeEach((to, from, next) => {
-            if (!guard.hasCheckedForSession) {
+            if (!MainAuth.hasCheckedForSession) {
                 console.log(to);
                 // We haven't checked for a session yet, so wait before routing
                 guard.deferredRouting = { to, from, next };
