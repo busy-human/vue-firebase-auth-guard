@@ -76,6 +76,15 @@ export class CallbackController<T> {
     }
 
     /**
+     * Cleans up all callbacks and other data
+     */
+    cleanup() {
+        this.callbacks = [];
+        this.callbacksToDelete = [];
+        this.previousCall = null;
+    }
+
+    /**
      *
      * @param {*} data - Data to be passed into the callback functions, if any
      * @param {function} [sideEffect] - A side effect function to run against each registered callback
