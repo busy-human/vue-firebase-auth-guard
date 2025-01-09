@@ -4,7 +4,7 @@
  *   This file, its contents, concepts, methods, behavior, and operation  (collectively the "Software") are protected by trade secret, patent,  and copyright laws. The use of the Software is governed by a license  agreement. Disclosure of the Software to third parties, in any form,  in whole or in part, is expressly prohibited except as authorized by the license agreement.
  */
 import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
-import { Ref, ref, readonly, DeepReadonly} from "vue";
+import { Ref, ref, computed, ComputedRef} from "vue";
 import {CallbackController} from "./callbacks.js";
 import { MainAuth, assertMainAuth } from "./auth-state.js";
 
@@ -12,14 +12,14 @@ import { MainAuth, assertMainAuth } from "./auth-state.js";
 
 interface ReadOnlyWrapper<T> {
     ref: Ref<T>,
-    readonly: DeepReadonly<T>
+    readonly: ComputedRef<T>
 }
 
 function createReadOnlyWrapper<T>(initialValue: T): ReadOnlyWrapper<T> {
     const _ref = ref(initialValue);
     return {
         ref: _ref as any as Ref<T>,
-        readonly: readonly(_ref) as any as DeepReadonly<T>
+        readonly: computed(() => _ref) as any as ComputedRef<T>
     };
 }
 
@@ -53,13 +53,13 @@ const globals: IGlobals = {
 };
 
 type IExportedGlobals = Omit<IGlobals, "initialized" | "user" | "model" | "authenticated" | "claims" | "authReady" | "uid" | "userType"> & {
-    user         : DeepReadonly<FirebaseUser | null>;
-    userModel    : DeepReadonly<any | null>;
-    claims       : DeepReadonly<CustomClaimsToken | null>;
-    authReady    : DeepReadonly<boolean>;
-    uid          : DeepReadonly<string | null>;
-    userType     : DeepReadonly<string | null>;
-    authenticated: DeepReadonly<boolean>;
+    user         : ComputedRef<FirebaseUser | null>;
+    userModel    : ComputedRef<any | null>;
+    claims       : ComputedRef<CustomClaimsToken | null>;
+    authReady    : ComputedRef<boolean>;
+    uid          : ComputedRef<string | null>;
+    userType     : ComputedRef<string | null>;
+    authenticated: ComputedRef<boolean>;
 }
 
 
