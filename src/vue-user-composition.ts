@@ -1,25 +1,39 @@
+import { Ref } from './../node_modules/@vue/reactivity/dist/reactivity.d';
 /*
  *   Copyright (c) 2021 Busy Human LLC
  *   All rights reserved.
  *   This file, its contents, concepts, methods, behavior, and operation  (collectively the "Software") are protected by trade secret, patent,  and copyright laws. The use of the Software is governed by a license  agreement. Disclosure of the Software to third parties, in any form,  in whole or in part, is expressly prohibited except as authorized by the license agreement.
  */
-import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
-import {ref, Ref} from "vue";
-import {Callback, CallbackController} from "./callbacks.js";
-import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
-import { MainAuth, assertMainAuth, initializeAuthState } from "./auth-state.js";
+import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
+import {ref, readonly, DeepReadonly} from "vue";
+import {CallbackController} from "./callbacks.js";
+import { MainAuth, assertMainAuth } from "./auth-state.js";
 
 // Authentication Lifecycle
 
+interface ReadOnlyWrapper<T> {
+    ref: Ref<T>,
+    readonly: DeepReadonly<T>
+}
+
+function createReadOnlyWrapper<T>(initialValue: T): ReadOnlyWrapper<T> {
+    const _ref = ref(initialValue);
+    return {
+        ref: _ref as any as Ref<T>,
+        readonly: readonly(_ref) as any as DeepReadonly<T>
+    };
+}
+
+
 interface IGlobals {
     initialized  : boolean;
-    user         : Ref<FirebaseUser | null>;
-    model        : Ref<any | null>;
-    claims       : Ref<CustomClaimsToken | null>;
-    authReady    : Ref<boolean>;
-    uid          : Ref<string | null>;
-    userType     : Ref<string | null>;
-    authenticated: Ref<boolean>;
+    user         : ReadOnlyWrapper<FirebaseUser | null>;
+    model        : ReadOnlyWrapper<any | null>;
+    claims       : ReadOnlyWrapper<CustomClaimsToken | null>;
+    authReady    : ReadOnlyWrapper<boolean>;
+    uid          : ReadOnlyWrapper<string | null>;
+    userType     : ReadOnlyWrapper<string | null>;
+    authenticated: ReadOnlyWrapper<boolean>;
     onAuth       : CallbackController<any>;
     onUnauth     : CallbackController<any>;
     onAuthChecked: CallbackController<any>;
@@ -27,17 +41,27 @@ interface IGlobals {
 
 const globals: IGlobals = {
     initialized   : false,
-    user          : ref(null),
-    model         : ref(null),
-    authenticated : ref(false),
-    claims        : ref(null),
-    authReady     : ref(false),
-    uid           : ref(null),
-    userType      : ref(null),
+    user          : createReadOnlyWrapper(null),
+    model         : createReadOnlyWrapper(null),
+    authenticated : createReadOnlyWrapper(false),
+    claims        : createReadOnlyWrapper(null),
+    authReady     : createReadOnlyWrapper(false),
+    uid           : createReadOnlyWrapper(null),
+    userType      : createReadOnlyWrapper(null),
     onAuth        : new CallbackController(),
     onUnauth      : new CallbackController(),
     onAuthChecked : new CallbackController()
 };
+
+type IExportedGlobals = Omit<IGlobals, "initialized" | "user" | "model" | "authenticated" | "claims" | "authReady" | "uid" | "userType"> & {
+    user         : DeepReadonly<FirebaseUser | null>;
+    userModel    : DeepReadonly<any | null>;
+    claims       : DeepReadonly<CustomClaimsToken | null>;
+    authReady    : DeepReadonly<boolean>;
+    uid          : DeepReadonly<string | null>;
+    userType     : DeepReadonly<string | null>;
+    authenticated: DeepReadonly<boolean>;
+}
 
 
 function initialize() {
@@ -45,43 +69,43 @@ function initialize() {
 
     if(!globals.initialized) {
         globals.initialized   = true;
-        globals.user          = ref(null);
-        globals.model         = ref(null);
-        globals.authenticated = ref(false);
-        globals.claims        = ref(null);
-        globals.authReady     = ref(false);
-        globals.uid           = ref(null);
-        globals.userType      = ref(null);
+        globals.user.ref.value = null;
+        globals.model.ref.value = null;
+        globals.authenticated.ref.value = false;
+        globals.claims.ref.value = null;
+        globals.authReady.ref.value = false;
+        globals.uid.ref.value = null;
+        globals.userType.ref.value = null;
 
         MainAuth.onChange((userAuth) => {
-            globals.user.value = userAuth.firebaseUser;
-            globals.model.value = userAuth.userModel;
-            globals.authenticated.value = userAuth.loggedIn;
-            globals.claims.value = userAuth.claims;
-            globals.uid.value = userAuth.firebaseUser?.uid || null;
-            globals.authReady.value = true;
-            globals.userType.value = userAuth.userType as string;
+            globals.user.ref.value = userAuth.firebaseUser;
+            globals.model.ref.value = userAuth.userModel;
+            globals.authenticated.ref.value = userAuth.loggedIn;
+            globals.claims.ref.value = userAuth.claims;
+            globals.uid.ref.value = userAuth.firebaseUser?.uid || null;
+            globals.authReady.ref.value = true;
+            globals.userType.ref.value = userAuth.userType as string;
 
             if(userAuth.loggedIn) {
-                globals.onAuth.run(globals.user.value);
+                globals.onAuth.run(globals.user.ref.value);
             } else {
-                globals.onUnauth.run(globals.user.value);
+                globals.onUnauth.run(globals.user.ref.value);
             }
         });
     }
 }
 
-export const VueUserComposition = {
-    user          : globals.user,
-    userModel     : globals.model,
-    authenticated : globals.authenticated,
-    claims        : globals.claims,
-    authReady     : globals.authReady,
-    uid           : globals.uid,
-    userType      : globals.userType,
-    onAuth        : (cb: Callback<FirebaseUser>) => globals.onAuth.add(cb),
-    onUnauth      : (cb: Callback<void>) => globals.onUnauth.add(cb),
-    onAuthChecked : (cb: Callback<FirebaseUser|null>) => globals.onAuthChecked.add(cb)
+export const VueUserComposition: IExportedGlobals = {
+    user          : globals.user.readonly,
+    userModel     : globals.model.readonly,
+    authenticated : globals.authenticated.readonly,
+    claims        : globals.claims.readonly,
+    authReady     : globals.authReady.readonly,
+    uid           : globals.uid.readonly,
+    userType      : globals.userType.readonly,
+    onAuth        : globals.onAuth,
+    onUnauth      : globals.onUnauth,
+    onAuthChecked : globals.onAuthChecked,
 };
 
 export function useVueUserComposition() {
