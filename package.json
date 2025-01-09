@@ -16,7 +16,7 @@
   },
   "exports": {
     "types": "./dist/index.d.ts",
-    "default": "./dist/index.es5.js"
+    "default": "./dist/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
