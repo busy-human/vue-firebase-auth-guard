@@ -61,6 +61,12 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         };
     }
 
+    setUserModel<TypeName extends keyof TypeMap>(model: TypeMap[any], typeName: TypeName) {
+        this.userModel = model;
+        this.userType = typeName;
+        this.onAuthStateChangedCallbacks.run( this.makeAuthChangeEvent("model_updated") );
+    }
+
     async resolveUserModel() {
         if(this.resolver && this.firebaseUser && this.claims) {
 
