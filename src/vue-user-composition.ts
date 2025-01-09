@@ -73,7 +73,7 @@ function initialize() {
 
 export const VueUserComposition = {
     user          : globals.user,
-    userspace     : globals.model,
+    userModel     : globals.model,
     authenticated : globals.authenticated,
     claims        : globals.claims,
     authReady     : globals.authReady,
