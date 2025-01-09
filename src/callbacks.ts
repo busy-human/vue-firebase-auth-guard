@@ -100,4 +100,4 @@ export class CallbackController<T> {
     }
 }
 
-module.exports.CallbackController = CallbackController;
+export default CallbackController;
