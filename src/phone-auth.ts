@@ -1,6 +1,6 @@
 import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 import { FirebaseError } from "@firebase/util";
-import { MainAuth, assertMainAuth } from "./auth-state";
+import { MainAuth, assertMainAuth } from "./auth-state.js";
 
 class PhoneNumberAuthenticatorClass {
     private recaptchaTargetElement?: HTMLElement | string | null;
