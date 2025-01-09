@@ -67,20 +67,7 @@ function initialize(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
     }
 }
 
-/**
- *
- * @param {import("@types/firebase")} [auth]
- */
-function install(auth: Auth) {
-    initialize(auth);
-}
-
-export function useVueUserComposition() {
-    return VueUserComposition;
-}
-
 export const VueUserComposition = {
-    install       : install,
     user          : globals.user,
     userspace     : globals.model,
     authenticated : globals.authenticated,
@@ -91,3 +78,8 @@ export const VueUserComposition = {
     onUnauth      : (cb: Callback<void>) => globals.onUnauth.add(cb),
     onAuthChecked : (cb: Callback<FirebaseUser|null>) => globals.onAuthChecked.add(cb)
 };
+
+export function useVueUserComposition(auth: Auth, resolver?: UserModelResolver<UserModelMap>) {
+    initialize(auth, resolver);
+    return VueUserComposition;
+}
