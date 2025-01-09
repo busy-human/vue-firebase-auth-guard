@@ -68,7 +68,7 @@ class PhoneNumberAuthenticatorClass {
 
 let instance: PhoneNumberAuthenticatorClass;
 
-export function getPhoneNumberAuthenticator(recaptchaTargetElement: HTMLElement | string) {
+export function getPhoneNumberAuthenticator(recaptchaTargetElement?: HTMLElement | string) {
     if(!instance) {
         instance = new PhoneNumberAuthenticatorClass(recaptchaTargetElement);
     }
