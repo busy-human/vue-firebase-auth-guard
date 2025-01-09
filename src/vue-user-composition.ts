@@ -19,7 +19,7 @@ function createReadOnlyWrapper<T>(initialValue: T): ReadOnlyWrapper<T> {
     const _ref = ref(initialValue);
     return {
         ref: _ref as any as Ref<T>,
-        readonly: computed(() => _ref) as any as ComputedRef<T>
+        readonly: computed(() => _ref.value) as any as ComputedRef<T>
     };
 }
 
