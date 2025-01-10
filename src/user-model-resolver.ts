@@ -24,9 +24,11 @@ export interface UserModelMap {
 
 export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
+    defaultModel?: keyof TypeMap;
 
-    constructor(map: TypeMap) {
+    constructor(map: TypeMap, defaultModel?: keyof TypeMap) {
         this.map = map;
+        this.defaultModel = defaultModel;
     }
 
     testPatternFields(user: FirebaseUser, pattern: MatcherPattern, field: keyof MatcherPattern): boolean {
@@ -112,6 +114,9 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
                     return this.map[key];
                 }
             }
+            if(this.defaultModel) {
+                return this.map[this.defaultModel];
+            }
             throw new Error(`No user model found for user ${user.uid}`);
         }
     }
@@ -145,6 +150,6 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
     }
 }
 
-export function defineUserModels<T extends UserModelMap>(map: T): UserModelResolver<T> {
-    return new UserModelResolver(map);
+export function defineUserModels<T extends UserModelMap>(map: T, defaultModel?: keyof T): UserModelResolver<T> {
+    return new UserModelResolver(map, defaultModel);
 }
