@@ -36,6 +36,8 @@ class AuthGuardBootstrapper {
                 guard.resolveRoute(to, from, next);
             }
         });
+
+        return guard;
     }
 };
 
