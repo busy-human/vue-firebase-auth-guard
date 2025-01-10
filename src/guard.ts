@@ -126,7 +126,7 @@ export class AuthGuardTracker {
         const meta = resolveMeta(to);
 
         // If there are no user types specified, allow all user types
-        if(!meta.userTypes) {
+        if(!meta?.userTypes) {
             return true;
         }
 
