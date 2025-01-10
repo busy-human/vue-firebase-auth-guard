@@ -159,4 +159,16 @@ export class AuthGuardTracker {
             next(this.pathFor("login"));
         }
     };
+
+    /**
+     * Convenience method that creates a special version of router.beforeEach that includes auth data
+     * @param to
+     * @param from
+     * @param next
+     */
+    beforeEach(fn: (authData: any, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void ) {
+        this.router.beforeEach((to, from, next) => {
+            fn(MainAuth.getSnapshot(), to, from, next);
+        });
+    }
 }

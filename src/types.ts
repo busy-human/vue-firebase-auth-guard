@@ -74,7 +74,7 @@ export const AUTH_DEFAULTS: AuthGuardOptions = {
 };
 
 
-export interface AuthStateCallbackData<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> {
+export interface AuthStateSnapshot<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> {
     firebaseUser: FirebaseUser | null;
     userModel: TypeMap[TypeName] | null;
     userType: TypeName | null;
@@ -88,7 +88,7 @@ export interface AuthLogOutOptions {
     cleanup?: boolean;
 }
 
-export type AuthEvent = "authenticated" | "unauthenticated" | "auth_checked" | "auth_error" | "model_updated" | "claims_updated";
+export type AuthEvent = "authenticated" | "unauthenticated" | "auth_checked" | "auth_error" | "model_updated" | "claims_updated" | "snapshot";
 
 export const AuthErrorMap: {[code: string]: string} = {
     'auth/invalid-email': "Invalid Email",
@@ -97,4 +97,4 @@ export const AuthErrorMap: {[code: string]: string} = {
     'auth/email-already-in-use': "Email Already In Use"
 };
 
-export type RouteResolver<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> = (authData: AuthStateCallbackData<TypeMap, TypeName>, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void;
+export type RouteResolver<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> = (authData: AuthStateSnapshot<TypeMap, TypeName>, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void;

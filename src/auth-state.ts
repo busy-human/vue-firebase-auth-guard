@@ -2,7 +2,7 @@ import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "fi
 import { FirebaseError } from "@firebase/util";
 import { UserModelResolver } from "./user-model-resolver.js";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions, AuthRouteMap, UserModelMap } from "./types.js";
+import { AuthStateSnapshot, AuthEvent, AuthErrorMap, AuthLogOutOptions, AuthRouteMap, UserModelMap } from "./types.js";
 
 
 
@@ -15,7 +15,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     resolver                   ?: UserModelResolver<TypeMap>;
     userRoutes                 ?: Partial<AuthRouteMap>;
     hasCheckedForSession        : boolean = false;
-    private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap, any>>;
+    private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
         this.auth = auth;
@@ -24,14 +24,14 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.resolver = resolver;
         this.claims = null;
         this.userType = null;
-        this.onAuthStateChangedCallbacks = new CallbackController<AuthStateCallbackData<TypeMap, any>>();
+        this.onAuthStateChangedCallbacks = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
     }
 
     get loggedIn() {
         return !!this.auth.currentUser;
     }
 
-    makeAuthChangeEvent(eventName:AuthEvent) {
+    getSnapshot(eventName:AuthEvent = "snapshot") {
         return {
             firebaseUser         : this.firebaseUser,
             userModel            : this.userModel,
@@ -47,7 +47,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     setUserModel<TypeName extends keyof TypeMap>(model: TypeMap[any], typeName: TypeName) {
         this.userModel = model;
         this.userType = typeName;
-        this.onAuthStateChangedCallbacks.run( this.makeAuthChangeEvent("model_updated") );
+        this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_updated") );
     }
 
     async resolveUserModel() {
@@ -87,7 +87,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 this.hasCheckedForSession = true;
 
                 // Run callbacks (if any)
-                this.onAuthStateChangedCallbacks.run( this.makeAuthChangeEvent(eventName) );
+                this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
             } catch(err: any) {
                 if("code" in err) {
                     this.logFirebaseError(err.code);
@@ -109,7 +109,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         console.warn(readable);
     }
 
-    onChange(cb: Callback<AuthStateCallbackData<TypeMap, any>>, options: {once: boolean} = { once: false }) {
+    onChange(cb: Callback<AuthStateSnapshot<TypeMap, any>>, options: {once: boolean} = { once: false }) {
         this.onAuthStateChangedCallbacks.add(cb, { once: options.once });
     }
 
@@ -121,7 +121,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             }
 
             // Run callbacks (if any)
-            this.onAuthStateChangedCallbacks.run( this.makeAuthChangeEvent("claims_updated") );
+            this.onAuthStateChangedCallbacks.run( this.getSnapshot("claims_updated") );
 
             return this.claims;
         } else {
@@ -132,7 +132,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     waitForAuthCheck() {
         return new Promise((resolve) => {
             if(this.hasCheckedForSession) {
-                resolve( this.makeAuthChangeEvent("auth_checked") );
+                resolve( this.getSnapshot("auth_checked") );
             } else {
                 this.onAuthStateChangedCallbacks.add((data) => {
                     if(data.hasCheckedForSession) {
@@ -150,7 +150,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.hasCheckedForSession = false;
 
         // Run callbacks (if any)
-        this.onAuthStateChangedCallbacks.run( this.makeAuthChangeEvent("unauthenticated") );
+        this.onAuthStateChangedCallbacks.run( this.getSnapshot("unauthenticated") );
 
         if(options.cleanup) {
             // Clear any pending callbacks
