@@ -5,7 +5,7 @@ import { AuthGuardTracker } from "./guard.js";
 import { MainAuth, assertMainAuth } from "./auth-state.js";
 
 class AuthGuardBootstrapper {
-    install(router: Router, auth: Auth, options: AuthGuardOptions) {
+    install(router: Router, options: AuthGuardOptions) {
         assertMainAuth();
 
         const guard = new AuthGuardTracker({
