@@ -105,20 +105,14 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
 
     findMatch<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken, hint?: K): TypeMap[K] | TypeMap[keyof TypeMap] | null {
 
-        if(hint && this.checkTypeWithMatcher(user, claims, this.map[hint].matcher)) {
-            return this.map[hint];
-
-        } else {
-            for(const key in this.map) {
-                if(this.checkTypeWithMatcher(user, claims, this.map[key].matcher)) {
-                    return this.map[key];
-                }
-            }
+        const name = this.findMatchTypeName(user, claims, hint);
+        if(!name) {
             if(this.defaultModel) {
-                return this.map[this.defaultModel];
+                throw new Error(`Default model "${String(this.defaultModel)}" not found. Please check your spelling and UserModelMap`);
             }
             throw new Error(`No user model found for user ${user.uid}`);
         }
+        return this.map[name] as TypeMap[K];
     }
 
     findMatchTypeName<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken, hint?: K): K | null {
@@ -131,6 +125,9 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
                 if(this.checkTypeWithMatcher(user, claims, this.map[key].matcher)) {
                     return key as unknown as K;
                 }
+            }
+            if(this.defaultModel) {
+                return this.defaultModel as K;
             }
             throw new Error(`No user model found for user ${user.uid}`);
         }
