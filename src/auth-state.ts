@@ -91,7 +91,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 if(user) {
                     this.firebaseUser = user;
                     this.claims = (await user.getIdTokenResult()).claims;
-                    this.resolveUserModel();
+                    await this.resolveUserModel();
                     eventName = "authenticated";
                 } else {
                     this.firebaseUser = null;
