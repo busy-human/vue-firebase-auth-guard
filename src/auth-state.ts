@@ -32,7 +32,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     claims                      : CustomClaimsToken | null;
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
-    hasCheckedForSession        : boolean = false;
+    hasCheckedForSession = false;
     private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap>>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
@@ -107,7 +107,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 if("code" in err) {
                     this.logFirebaseError(err.code);
                 } else {
-                    console.warn("An error occurred while trying to refresh claims:", err.message);
+                    console.warn("An error occurred on the auth state manager: ", err.message);
+                    console.error(err);
                 }
             }
         });

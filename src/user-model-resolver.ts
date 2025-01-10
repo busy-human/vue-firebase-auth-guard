@@ -102,6 +102,8 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
             return true;
         } else if(typeof matcher === "object" && this.matchWithPattern(user, claims, matcher)) {
             return true;
+        } else if(matcher && (typeof matcher === "function" || typeof matcher === "object")) {
+            return false;
         } else {
             throw new Error(`Matcher invalid or not provided`);
         }
