@@ -1,7 +1,7 @@
 import { Auth, User as FirebaseUser } from "firebase/auth";
 import { Router, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, NavigationGuardNext, RouteLocationResolvedGeneric } from "vue-router";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta, AuthRouteMap, UserModelMap} from "./types.js";
+import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta, AuthRouteMap, UserModelMap, AuthStateSnapshot} from "./types.js";
 import { MainAuth } from "./auth-state.js";
 
 function resolveOptions(defaults: AuthGuardOptions, overrides: Partial<AuthGuardOptions>) {
@@ -166,7 +166,7 @@ export class AuthGuardTracker {
      * @param from
      * @param next
      */
-    beforeEach(fn: (authData: any, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void ) {
+    beforeEach(fn: (authData: AuthStateSnapshot<any, any>, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void ) {
         this.router.beforeEach((to, from, next) => {
             fn(MainAuth.getSnapshot(), to, from, next);
         });
