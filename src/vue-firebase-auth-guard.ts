@@ -1,17 +1,17 @@
 import {Router} from "vue-router";
 import {Auth} from "firebase/auth";
 import { AuthGuardOptions } from "./types.js";
-import { AuthGuardTracker } from "./tracker.js";
-import { MainAuth, initializeAuthState } from "./auth-state.js";
+import { AuthGuardTracker } from "./guard.js";
+import { MainAuth, assertMainAuth } from "./auth-state.js";
 
-class AuthGuardClass {
+class AuthGuardBootstrapper {
     install(router: Router, auth: Auth, options: AuthGuardOptions) {
+        assertMainAuth();
+
         const guard = new AuthGuardTracker({
             ...options,
             router
         });
-
-        initializeAuthState(auth, options.modelResolver);
 
         MainAuth.onChange((data) => {
             if (!data.hasCheckedForSession) {
@@ -39,7 +39,7 @@ class AuthGuardClass {
     }
 };
 
-const AuthGuard = new AuthGuardClass();
+const AuthGuard = new AuthGuardBootstrapper();
 
 export { AuthGuard };
 export default AuthGuard;

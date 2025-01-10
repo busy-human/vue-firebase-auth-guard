@@ -1,4 +1,6 @@
 import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
+import { Router } from "vue-router";
+import { AuthRouteMap, RouteResolver } from "./types.js";
 
 interface MatcherPattern {
     email?: string | RegExp;
@@ -10,19 +12,21 @@ interface MatcherPattern {
     }
 }
 
+
 interface UserModelResolverOptions<TypeMap extends UserModelMap> {
     defaultModel?: keyof TypeMap;
 }
 
 type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);
 
-export interface UserModelDefinition<T> {
+export interface UserModelDefinition<TypeMap extends UserModelMap, TypeName extends keyof TypeMap, M = TypeMap[TypeName]> {
     matcher: MatcherOption;
-    builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<T>;
+    builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
+    routes?: Partial< AuthRouteMap<TypeMap, TypeName> >;
 }
 
 export interface UserModelMap {
-    [key: string]: UserModelDefinition<any>;
+    [key: string]: UserModelDefinition<UserModelMap, any>;
 }
 
 
@@ -135,6 +139,13 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
             }
             throw new Error(`No user model found for user ${user.uid}`);
         }
+    }
+
+    routesForType<K extends keyof TypeMap>(type: K): Partial<AuthRouteMap<TypeMap, K>> | undefined {
+        if(!this.map[type]) {
+            throw new Error(`User model ${String(type)} not found. Please check your spelling and UserModelMap`);
+        }
+        return this.map[type].routes;
     }
 
     resolve<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken,  hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {

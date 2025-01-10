@@ -2,28 +2,9 @@ import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "fi
 import { FirebaseError } from "@firebase/util";
 import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
 import { CallbackController, Callback } from "./callbacks.js";
+import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions } from "./types.js";
 
-interface AuthStateCallbackData<TypeMap extends UserModelMap> {
-    firebaseUser: FirebaseUser | null;
-    userModel: TypeMap[any] | null;
-    userType: keyof TypeMap | null;
-    claims: CustomClaimsToken | null;
-    loggedIn: boolean;
-    hasCheckedForSession: boolean;
-}
 
-interface AuthLogOutOptions {
-    cleanup?: boolean;
-}
-
-type AuthEvent = "authenticated" | "unauthenticated" | "auth_checked" | "auth_error" | "model_updated" | "claims_updated";
-
-const AuthErrorMap: {[code: string]: string} = {
-    'auth/invalid-email': "Invalid Email",
-    'auth/user-not-found': "User Not Found",
-    'auth/wrong-password': "Password Invalid",
-    'auth/email-already-in-use': "Email Already In Use"
-};
 
 export class AuthStateClass<TypeMap extends UserModelMap> {
     auth                        : Auth;
@@ -33,7 +14,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
     hasCheckedForSession        : boolean = false;
-    private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap>>;
+    private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap, any>>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
         this.auth = auth;
@@ -42,7 +23,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.resolver = resolver;
         this.claims = null;
         this.userType = null;
-        this.onAuthStateChangedCallbacks = new CallbackController<AuthStateCallbackData<TypeMap>>();
+        this.onAuthStateChangedCallbacks = new CallbackController<AuthStateCallbackData<TypeMap, any>>();
     }
 
     get loggedIn() {
@@ -107,7 +88,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 if("code" in err) {
                     this.logFirebaseError(err.code);
                 } else {
-                    console.warn("An error occurred while trying to refresh claims:", err.message);
+                    console.warn("An error occurred on the auth state manager: ", err.message);
+                    console.error(err);
                 }
             }
         });
@@ -123,7 +105,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         console.warn(readable);
     }
 
-    onChange(cb: Callback<AuthStateCallbackData<TypeMap>>, options: {once: boolean} = { once: false }) {
+    onChange(cb: Callback<AuthStateCallbackData<TypeMap, any>>, options: {once: boolean} = { once: false }) {
         this.onAuthStateChangedCallbacks.add(cb, { once: options.once });
     }
 
