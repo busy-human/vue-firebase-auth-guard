@@ -14,7 +14,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
     userRoutes                 ?: Partial<AuthRouteMap>;
-    hasCheckedForSession        : boolean = false;
+    hasCheckedForSession        = false;
+
     private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
@@ -39,8 +40,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             claims               : this.claims,
             loggedIn             : this.loggedIn,
             hasCheckedForSession : this.hasCheckedForSession,
-            eventName            : eventName,
-            routes               : this.userRoutes
+            routes               : this.userRoutes,
+            eventName
         };
     }
 
