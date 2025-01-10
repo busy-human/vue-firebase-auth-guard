@@ -4,8 +4,9 @@
  */
 import { Auth } from "firebase/auth";
 import {App as VueApp, Plugin} from "vue";
-import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
+import { UserModelResolver } from "./user-model-resolver.js";
 import { MainAuth, initializeAuthState } from "./auth-state.js";
+import { UserModelMap } from "./types.js";
 
 
 interface VueUserPluginInstallOptions {

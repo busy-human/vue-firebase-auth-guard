@@ -1,14 +1,14 @@
 import { Auth, User as FirebaseUser } from "firebase/auth";
 import { Router, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, NavigationGuardNext, RouteLocationResolvedGeneric } from "vue-router";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta, AuthRouteMap} from "./types.js";
+import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta, AuthRouteMap, UserModelMap} from "./types.js";
 import { MainAuth } from "./auth-state.js";
 
 function resolveOptions(defaults: AuthGuardOptions, overrides: Partial<AuthGuardOptions>) {
     return Object.assign({}, defaults, overrides);
 }
 
-function resolveMeta(routeOrRouteLike: RouteLocationNormalizedGeneric | RouteLocationResolvedGeneric): AuthRouteMeta {
+function resolveMeta<TypeMap extends UserModelMap>(routeOrRouteLike: RouteLocationNormalizedGeneric | RouteLocationResolvedGeneric): AuthRouteMeta<TypeMap, keyof TypeMap> {
     return routeOrRouteLike.meta;
 }
 
@@ -40,6 +40,8 @@ export class AuthGuardTracker {
     onCheckedForSession(callback: Callback<ResumeRoutingCallbackOptions>) {
         this.onCheckedForSessionCallbacks.add(callback, { once: true });
     }
+    pathFor(routeType: "login"): string;
+    pathFor(routeType: keyof AuthRouteMap): string | undefined;
     pathFor(routeType: keyof AuthRouteMap) {
         return this.userRouting?.[routeType] || this.config.routes[routeType];
     }
@@ -59,11 +61,16 @@ export class AuthGuardTracker {
 
         return isPublic;
     }
-    async pushTo(routeType: keyof AuthRouteMap) {
+    async pushTo(routeType: keyof AuthRouteMap, noFail = false) {
         const path = this.pathFor(routeType);
         if(!path) {
-            console.log(this.config);
-            throw new Error(`Failed to resolve ${routeType}`);
+            if(noFail) {
+                console.warn("Route not found: ", routeType);
+                return;
+            } else {
+                console.log(this.config);
+                throw new Error(`Failed to resolve ${routeType}`);
+            }
         }
         this.router.push(path);
     }
@@ -110,18 +117,46 @@ export class AuthGuardTracker {
     };
 
     /**
+     * Returns whether the view's userType list permits this user to view it
+     * If there are no userTypes specified, allow all user types
+     * @param to
+     * @returns
+     */
+    userListAllowsUser(to: RouteLocationNormalizedGeneric) {
+        const meta = resolveMeta(to);
+
+        // If there are no user types specified, allow all user types
+        if(!meta.userTypes) {
+            return true;
+        }
+
+        return meta.userTypes.includes(`${String(MainAuth.userType)}`);
+    }
+
+    /**
      * Checks whether the user is permitted to navigate to the route
+     * And navigates to the appropriate page
      */
     resolveRoute( to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) {
         var toPath = to.path || to;
 
         var requiresAuth = this.isAuthenticatedRoute(toPath);
-        var authorizedToView = !requiresAuth || MainAuth.loggedIn;
 
-        if (authorizedToView) {
-            next();
+        if (!requiresAuth || MainAuth.loggedIn) {
+            var userTypeAllowed = this.userListAllowsUser(to);
+            if(userTypeAllowed) {
+                next();
+            } else {
+                const noAuthPath = this.pathFor("notAuthorized");
+                if(noAuthPath) {
+                    next(noAuthPath);
+                } else {
+                    console.warn("Route not authorized: ", toPath);
+                    next(false);
+                }
+            }
         } else {
-            next(this.config.routes.login);
+            next(this.pathFor("login"));
         }
     };
 }

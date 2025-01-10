@@ -1,6 +1,5 @@
 import {NavigationGuardNext, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, RouteMeta, Router} from "vue-router";
-import {Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken} from "firebase/auth";
-import { UserModelResolver, UserModelMap } from "./user-model-resolver.js";
+import {User as FirebaseUser, ParsedToken as CustomClaimsToken} from "firebase/auth";
 
 export interface AuthRouteMap {
     /** This is the path to send users to, to login */
@@ -11,6 +10,9 @@ export interface AuthRouteMap {
 
     /** Where to redirect users that have logged out to */
     postAuth: string;
+
+    /** Where to send users if they are not authorized to view a particular page */
+    notAuthorized: string;
 }
 
 export interface AuthGuardOptions {
@@ -18,6 +20,32 @@ export interface AuthGuardOptions {
 
     /** If a route isn't listed as 'auth' or 'public', assume this by default: */
     assumeIfUndefined: "auth" | "public";
+}
+
+export interface MatcherPattern {
+    email?: string | RegExp;
+    phoneNumber?: string | RegExp;
+    uid?: string | RegExp;
+    tenantId?: string | RegExp;
+    claims?: {
+        [key: string]: RegExp | string | boolean;
+    }
+}
+
+export interface UserModelResolverOptions<TypeMap extends UserModelMap> {
+    defaultModel?: keyof TypeMap;
+}
+
+export type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);
+
+export interface UserModelDefinition<TypeMap extends UserModelMap, TypeName extends keyof TypeMap, M = TypeMap[TypeName]> {
+    matcher: MatcherOption;
+    builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
+    routes?: Partial< AuthRouteMap >;
+}
+
+export interface UserModelMap {
+    [key: string]: UserModelDefinition<UserModelMap, any>;
 }
 
 
@@ -31,7 +59,10 @@ export interface DeferredRouting {
     next: NavigationGuardNext;
 }
 
-export type AuthRouteMeta = RouteMeta & { requiresAuth?: boolean };
+export type AuthRouteMeta<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> = RouteMeta & {
+    requiresAuth?: boolean
+    userTypes?: TypeName[]
+};
 
 export const AUTH_DEFAULTS: AuthGuardOptions = {
     routes: {

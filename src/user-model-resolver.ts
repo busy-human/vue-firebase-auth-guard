@@ -1,33 +1,7 @@
 import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
-import { Router } from "vue-router";
-import { AuthRouteMap, RouteResolver } from "./types.js";
-
-interface MatcherPattern {
-    email?: string | RegExp;
-    phoneNumber?: string | RegExp;
-    uid?: string | RegExp;
-    tenantId?: string | RegExp;
-    claims?: {
-        [key: string]: RegExp | string | boolean;
-    }
-}
+import { AuthRouteMap, MatcherOption, MatcherPattern, UserModelMap, UserModelResolverOptions } from "./types.js";
 
 
-interface UserModelResolverOptions<TypeMap extends UserModelMap> {
-    defaultModel?: keyof TypeMap;
-}
-
-type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);
-
-export interface UserModelDefinition<TypeMap extends UserModelMap, TypeName extends keyof TypeMap, M = TypeMap[TypeName]> {
-    matcher: MatcherOption;
-    builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
-    routes?: Partial< AuthRouteMap >;
-}
-
-export interface UserModelMap {
-    [key: string]: UserModelDefinition<UserModelMap, any>;
-}
 
 
 export class UserModelResolver<TypeMap extends UserModelMap> {

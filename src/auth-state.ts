@@ -1,8 +1,8 @@
 import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase/auth";
 import { FirebaseError } from "@firebase/util";
-import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
+import { UserModelResolver } from "./user-model-resolver.js";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions, AuthRouteMap } from "./types.js";
+import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions, AuthRouteMap, UserModelMap } from "./types.js";
 
 
 
