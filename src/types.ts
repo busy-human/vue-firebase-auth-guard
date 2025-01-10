@@ -2,23 +2,22 @@ import {NavigationGuardNext, RouteLocationNormalizedGeneric, RouteLocationNormal
 import {Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken} from "firebase/auth";
 import { UserModelResolver, UserModelMap } from "./user-model-resolver.js";
 
-export interface AuthRouteMap<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> {
-    [key: string]: string | RouteResolver<TypeMap, TypeName> | undefined;
-
+export interface AuthRouteMap {
     /** This is the path to send users to, to login */
-    publicLanding?: string;
+    publicLanding: string;
 
     /** The redirect path after completing login */
     login: string;
 
     /** Where to redirect users that have logged out to */
-    postAuth: string | RouteResolver<TypeMap, TypeName>;
+    postAuth: string;
 }
 
 export interface AuthGuardOptions {
-    routes: Partial< AuthRouteMap<any, any> >,
+    routes: Partial< AuthRouteMap > & Pick<AuthRouteMap, "login" | "postAuth">,
+
     /** If a route isn't listed as 'auth' or 'public', assume this by default: */
-    assumeIfUndefined: string;
+    assumeIfUndefined: "auth" | "public";
 }
 
 
@@ -51,6 +50,7 @@ export interface AuthStateCallbackData<TypeMap extends UserModelMap, TypeName ex
     claims: CustomClaimsToken | null;
     loggedIn: boolean;
     hasCheckedForSession: boolean;
+    routes?: Partial<AuthRouteMap>;
 }
 
 export interface AuthLogOutOptions {

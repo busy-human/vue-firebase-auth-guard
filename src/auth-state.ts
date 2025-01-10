@@ -2,7 +2,7 @@ import { Auth, User as FirebaseUser, ParsedToken as CustomClaimsToken } from "fi
 import { FirebaseError } from "@firebase/util";
 import { UserModelMap, UserModelResolver } from "./user-model-resolver.js";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions } from "./types.js";
+import { AuthStateCallbackData, AuthEvent, AuthErrorMap, AuthLogOutOptions, AuthRouteMap } from "./types.js";
 
 
 
@@ -13,6 +13,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     claims                      : CustomClaimsToken | null;
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
+    userRoutes                 ?: Partial<AuthRouteMap>;
     hasCheckedForSession        : boolean = false;
     private onAuthStateChangedCallbacks : CallbackController<AuthStateCallbackData<TypeMap, any>>;
 
@@ -39,6 +40,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             loggedIn             : this.loggedIn,
             hasCheckedForSession : this.hasCheckedForSession,
             eventName            : eventName,
+            routes               : this.userRoutes
         };
     }
 
@@ -56,9 +58,11 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 throw new Error(`No user model found for user ${this.firebaseUser.uid}`);
             }
             this.userModel = await this.resolver.resolve(this.firebaseUser, this.claims, this.userType);
+            this.userRoutes = this.resolver.routesForType(this.userType);
         } else {
             this.userType = null;
             this.userModel = null;
+            this.userRoutes = undefined;
         }
 
         return this.userModel;

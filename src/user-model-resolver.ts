@@ -22,7 +22,7 @@ type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaims
 export interface UserModelDefinition<TypeMap extends UserModelMap, TypeName extends keyof TypeMap, M = TypeMap[TypeName]> {
     matcher: MatcherOption;
     builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
-    routes?: Partial< AuthRouteMap<TypeMap, TypeName> >;
+    routes?: Partial< AuthRouteMap >;
 }
 
 export interface UserModelMap {
@@ -143,7 +143,7 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
-    routesForType<K extends keyof TypeMap>(type: K): Partial<AuthRouteMap<TypeMap, K>> | undefined {
+    routesForType<K extends keyof TypeMap>(type: K): Partial<AuthRouteMap> | undefined {
         if(!this.map[type]) {
             throw new Error(`User model ${String(type)} not found. Please check your spelling and UserModelMap`);
         }

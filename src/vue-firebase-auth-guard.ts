@@ -19,11 +19,11 @@ class AuthGuardBootstrapper {
 
             } else if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path)) {
                 // The data.loggedIn just logged in / signed up
-                guard.pushToPostAuthPath();
+                guard.pushTo("postAuth");
 
             } else if (!data.loggedIn) {
                 // The user just logged out / signed out
-                router.push(guard.config.publicLanding);
+                guard.pushTo("publicLanding");
             }
         });
 
@@ -33,7 +33,7 @@ class AuthGuardBootstrapper {
                 // We haven't checked for a session yet, so wait before routing
                 guard.deferredRouting = { to, from, next };
             } else {
-                guard.resolvePath(to, from, next);
+                guard.resolveRoute(to, from, next);
             }
         });
     }

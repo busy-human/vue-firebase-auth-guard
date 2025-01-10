@@ -1,7 +1,7 @@
 import { Auth, User as FirebaseUser } from "firebase/auth";
 import { Router, RouteLocationNormalizedGeneric, RouteLocationNormalizedLoadedGeneric, NavigationGuardNext, RouteLocationResolvedGeneric } from "vue-router";
 import { CallbackController, Callback } from "./callbacks.js";
-import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta} from "./types.js";
+import { AuthGuardOptions, DeferredRouting, AuthGuardTrackerOptions, AUTH_DEFAULTS, AuthRouteMeta, AuthRouteMap} from "./types.js";
 import { MainAuth } from "./auth-state.js";
 
 function resolveOptions(defaults: AuthGuardOptions, overrides: Partial<AuthGuardOptions>) {
@@ -19,6 +19,7 @@ type ResumeRoutingCallbackOptions = {
 export class AuthGuardTracker {
     router                      : Router;
     config                      : AuthGuardOptions = AUTH_DEFAULTS;
+    userRouting?                : Partial<AuthRouteMap>
     deferredRouting?            : DeferredRouting;
     onCheckedForSessionCallbacks: CallbackController<ResumeRoutingCallbackOptions>;
 
@@ -27,27 +28,20 @@ export class AuthGuardTracker {
         this.onCheckedForSessionCallbacks = new CallbackController();
         this.config = resolveOptions(AUTH_DEFAULTS, options);
 
+        // Track changes to the user routing
+        MainAuth.onChange((data) => {
+            this.userRouting = data.routes;
+        });
 
-        if (!this.config.postAuthPath) {
-            console.warn('You must pass in postAuthPath with the AuthGuard.install options');
+        if (!this.config.routes.postAuth) {
+            console.warn('You must pass in postAuth with the AuthGuard.install options');
         }
     }
     onCheckedForSession(callback: Callback<ResumeRoutingCallbackOptions>) {
         this.onCheckedForSessionCallbacks.add(callback, { once: true });
     }
-    resolvePath(routeType: string) {
-        if (typeof this.config.postAuthPath === "function") {
-            return Promise.resolve(this.config.postAuthPath(this.router, MainAuth.firebaseUser));
-        } else {
-            return Promise.resolve(this.config.postAuthPath);
-        }
-    }
-    resolvePostAuthPath() {
-        if (typeof this.config.postAuthPath === "function") {
-            return Promise.resolve(this.config.postAuthPath(this.router, MainAuth.firebaseUser));
-        } else {
-            return Promise.resolve(this.config.postAuthPath);
-        }
+    pathFor(routeType: keyof AuthRouteMap) {
+        return this.userRouting?.[routeType] || this.config.routes[routeType];
     }
     /**
      * Public Routes do not require authentication
@@ -65,11 +59,11 @@ export class AuthGuardTracker {
 
         return isPublic;
     }
-    async pushToPostAuthPath() {
-        const path = await this.resolvePostAuthPath();
+    async pushTo(routeType: keyof AuthRouteMap) {
+        const path = this.pathFor(routeType);
         if(!path) {
             console.log(this.config);
-            throw new Error("Failed to resolve postAuthPath");
+            throw new Error(`Failed to resolve ${routeType}`);
         }
         this.router.push(path);
     }
@@ -79,24 +73,24 @@ export class AuthGuardTracker {
             var rt = this.deferredRouting;
             delete this.deferredRouting;
             if (MainAuth.loggedIn && this.isLoginPage(rt.to)) {
-                await this.pushToPostAuthPath();
+                await this.pushTo("postAuth");
             } else {
-                this.resolvePath(rt.to, rt.from, rt.next);
+                this.resolveRoute(rt.to, rt.from, rt.next);
             }
         } else if (MainAuth.loggedIn) {
             console.log("Router: User logged in");
-            await this.pushToPostAuthPath();
+            await this.pushTo("postAuth");
             this.onCheckedForSessionCallbacks.run({ router: this.router });
         } else {
             console.log("Router: No session");
-            this.router.push(this.config.loginPath);
+            this.router.push(this.config.routes.login);
             this.onCheckedForSessionCallbacks.run({ router: this.router });
         }
     }
 
     isLoginPage(path: string | RouteLocationNormalizedGeneric) {
         var pathStr = (typeof path === "string" ? path : path.fullPath);
-        return pathStr.indexOf(this.config.loginPath) >= 0;
+        return pathStr.indexOf(this.config.routes.login) >= 0;
     };
 
     /**
@@ -118,7 +112,7 @@ export class AuthGuardTracker {
     /**
      * Checks whether the user is permitted to navigate to the route
      */
-    resolvePath( to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) {
+    resolveRoute( to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) {
         var toPath = to.path || to;
 
         var requiresAuth = this.isAuthenticatedRoute(toPath);
@@ -127,7 +121,7 @@ export class AuthGuardTracker {
         if (authorizedToView) {
             next();
         } else {
-            next(this.config.loginPath);
+            next(this.config.routes.login);
         }
     };
 }
