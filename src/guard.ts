@@ -134,6 +134,7 @@ export class AuthGuardTracker {
         if(!result) {
             console.log(`User ${String(MainAuth.userType)} is not authorized to view ${to.fullPath}. Expected one of: ${meta.userTypes.join(', ')}`);
         }
+        return result;
     }
 
     /**
