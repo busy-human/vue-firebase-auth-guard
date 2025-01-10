@@ -54,7 +54,7 @@ const globals: IGlobals = {
 
 type IExportedGlobals = Omit<IGlobals, "initialized" | "user" | "model" | "authenticated" | "claims" | "authReady" | "uid" | "userType"> & {
     user         : ComputedRef<FirebaseUser | null>;
-    userModel    : ComputedRef<any | null>;
+    userModel    : Ref<any | null>;
     claims       : ComputedRef<CustomClaimsToken | null>;
     authReady    : ComputedRef<boolean>;
     uid          : ComputedRef<string | null>;
@@ -96,7 +96,7 @@ function initialize() {
 
 export const VueUserComposition: IExportedGlobals = {
     user          : globals.user.readonly,
-    userModel     : globals.model.readonly,
+    userModel     : globals.model.ref,
     authenticated : globals.authenticated.readonly,
     claims        : globals.claims.readonly,
     authReady     : globals.authReady.readonly,
