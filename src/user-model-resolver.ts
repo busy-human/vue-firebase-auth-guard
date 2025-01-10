@@ -93,9 +93,9 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
 
     checkTypeWithMatcher(user: FirebaseUser, claims: CustomClaimsToken, matcher: MatcherOption): boolean {
         if(typeof matcher === "function" && matcher(user, claims) === true) {
-            return true
+            return true;
         } else if(typeof matcher === "object" && this.matchWithPattern(user, claims, matcher)) {
-            return true
+            return true;
         } else {
             throw new Error(`Matcher invalid or not provided`);
         }
