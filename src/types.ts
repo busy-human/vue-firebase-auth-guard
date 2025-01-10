@@ -33,7 +33,11 @@ export interface MatcherPattern {
 }
 
 export interface UserModelResolverOptions<TypeMap extends UserModelMap> {
+    /** User type to use if no user type is resolved */
     defaultModel?: keyof TypeMap;
+
+    /** Sets */
+    overrideType?: keyof TypeMap;
 }
 
 export type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);

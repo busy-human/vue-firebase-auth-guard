@@ -7,10 +7,12 @@ import { AuthRouteMap, MatcherOption, MatcherPattern, UserModelMap, UserModelRes
 export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
     defaultModel?: keyof TypeMap;
+    overrideType?: keyof TypeMap;
 
     constructor(map: TypeMap, options?: UserModelResolverOptions<TypeMap>) {
         this.map = map;
         this.defaultModel = options?.defaultModel;
+        this.overrideType = options?.overrideType;
     }
 
     testPatternFields(user: FirebaseUser, pattern: MatcherPattern, field: keyof MatcherPattern): boolean {
@@ -128,6 +130,14 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         let match = this.findMatch(user, claims, hint);
         if(!match) {
             throw new Error(`No user model found for user ${user.uid}`);
+        }
+        return match.builder(user, claims);
+    }
+
+    resolveForType<K extends keyof TypeMap>(typeName: K, user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["builder"]> > {
+        let match = this.map[typeName];
+        if(!match) {
+            throw new Error(`User type ${String(typeName)} not found. Please check your spelling and UserModelMap`);
         }
         return match.builder(user, claims);
     }

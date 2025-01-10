@@ -50,14 +50,35 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_updated") );
     }
 
+    async setOverrideUserType<TypeName extends keyof TypeMap>(typeName?: TypeName) {
+        if(!this.resolver) {
+            throw new Error("No user model resolver defined");
+        }
+        this.resolver.overrideType = typeName;
+        await this.resolveUserModel();
+        const snap = this.getSnapshot("model_updated");
+        this.onAuthStateChangedCallbacks.run( snap );
+        return snap;
+    }
+
+    async clearOverrideUserType() {
+        return this.setOverrideUserType();
+    }
+
     async resolveUserModel() {
         if(this.resolver && this.firebaseUser && this.claims) {
 
-            this.userType = await this.resolver.findMatchTypeName(this.firebaseUser, this.claims);
-            if(!this.userType) {
-                throw new Error(`No user model found for user ${this.firebaseUser.uid}`);
+            if(this.resolver.overrideType) {
+                // Resolve with the override type
+                this.userType = this.resolver.overrideType;
+                this.userModel = await this.resolver.resolveForType(this.resolver.overrideType, this.firebaseUser, this.claims);
+
+            } else {
+                // Resolve with the best match type
+                this.userType = await this.resolver.findMatchTypeName(this.firebaseUser, this.claims);
+                if(!this.userType) throw new Error(`No user model found for user ${this.firebaseUser.uid}`);
+                this.userModel = await this.resolver.resolve(this.firebaseUser, this.claims, this.userType);
             }
-            this.userModel = await this.resolver.resolve(this.firebaseUser, this.claims, this.userType);
             this.userRoutes = this.resolver.routesForType(this.userType);
         } else {
             this.userType = null;
