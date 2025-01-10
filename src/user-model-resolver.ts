@@ -10,6 +10,10 @@ interface MatcherPattern {
     }
 }
 
+interface UserModelResolverOptions<TypeMap extends UserModelMap> {
+    defaultModel?: keyof TypeMap;
+}
+
 type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);
 
 export interface UserModelDefinition<T> {
@@ -26,9 +30,9 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
     defaultModel?: keyof TypeMap;
 
-    constructor(map: TypeMap, defaultModel?: keyof TypeMap) {
+    constructor(map: TypeMap, options?: UserModelResolverOptions<TypeMap>) {
         this.map = map;
-        this.defaultModel = defaultModel;
+        this.defaultModel = options?.defaultModel;
     }
 
     testPatternFields(user: FirebaseUser, pattern: MatcherPattern, field: keyof MatcherPattern): boolean {
@@ -147,6 +151,6 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
     }
 }
 
-export function defineUserModels<T extends UserModelMap>(map: T, defaultModel?: keyof T): UserModelResolver<T> {
-    return new UserModelResolver(map, defaultModel);
+export function defineUserModels<T extends UserModelMap>(map: T, options?: UserModelResolverOptions<T>): UserModelResolver<T> {
+    return new UserModelResolver(map, options);
 }
