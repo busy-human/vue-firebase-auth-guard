@@ -86,6 +86,7 @@ export interface AuthStateSnapshot<TypeMap extends UserModelMap, TypeName extend
     loggedIn: boolean;
     hasCheckedForSession: boolean;
     routes?: Partial<AuthRouteMap>;
+    uid: string | null;
 }
 
 export interface AuthLogOutOptions {

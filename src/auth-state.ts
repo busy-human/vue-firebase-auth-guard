@@ -14,6 +14,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
     userRoutes                 ?: Partial<AuthRouteMap>;
+    uid                        ?: string | null
     hasCheckedForSession        = false;
 
     private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
@@ -25,6 +26,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.resolver = resolver;
         this.claims = null;
         this.userType = null;
+        this.uid = null;
         this.onAuthStateChangedCallbacks = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
     }
 
@@ -41,6 +43,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             loggedIn             : this.loggedIn,
             hasCheckedForSession : this.hasCheckedForSession,
             routes               : this.userRoutes,
+            uid                  : this.firebaseUser?.uid || null,
             eventName
         };
     }
@@ -113,11 +116,13 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 let eventName: AuthEvent;
                 if(user) {
                     this.firebaseUser = user;
+                    this.uid = user.uid;
                     this.claims = (await user.getIdTokenResult()).claims;
                     await this.resolveUserModel();
                     eventName = "authenticated";
                 } else {
                     this.firebaseUser = null;
+                    this.uid = null;
                     this.userModel = null;
                     this.claims = null;
                     eventName = "unauthenticated";
