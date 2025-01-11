@@ -48,6 +48,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     setUserModel<TypeName extends keyof TypeMap>(model: TypeMap[any], typeName: TypeName) {
         this.userModel = model;
         this.userType = typeName;
+        console.log(`User model updated to ${String(typeName)}`, model);
         this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_updated") );
     }
 

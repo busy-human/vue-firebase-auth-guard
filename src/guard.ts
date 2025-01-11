@@ -61,7 +61,7 @@ export class AuthGuardTracker {
 
         return isPublic;
     }
-    async pushTo(routeType: keyof AuthRouteMap, noFail = false) {
+    pushTo(routeType: keyof AuthRouteMap, noFail = false) {
         const path = this.pathFor(routeType);
         if(!path) {
             if(noFail) {
@@ -77,7 +77,7 @@ export class AuthGuardTracker {
     async resumeRouting() {
         if (this.deferredRouting && (this.isPublicRoute(this.deferredRouting.to) || MainAuth.loggedIn)) {
             console.log("Resuming attempted routing");
-            var rt = this.deferredRouting;
+            const rt = this.deferredRouting;
             delete this.deferredRouting;
             if (MainAuth.loggedIn && this.isLoginPage(rt.to)) {
                 await this.pushTo("postAuth");

@@ -14,16 +14,17 @@ class AuthGuardBootstrapper {
         });
 
         MainAuth.onChange((data) => {
-            if (!data.hasCheckedForSession) {
-                guard.resumeRouting();
-
-            } else if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path)) {
+            if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path)) {
                 // The data.loggedIn just logged in / signed up
                 guard.pushTo("postAuth");
 
-            } else if (!data.loggedIn) {
+            } else if ( ! data.loggedIn && ! guard.isPublicRoute(router.currentRoute.value.path)) {
                 // The user just logged out / signed out
                 guard.pushTo("publicLanding");
+
+            } else if (data.hasCheckedForSession && guard.deferredRouting) {
+                guard.resumeRouting();
+
             }
         });
 
