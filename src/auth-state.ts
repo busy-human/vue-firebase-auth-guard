@@ -14,8 +14,9 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     userType                    : keyof TypeMap | null;
     resolver                   ?: UserModelResolver<TypeMap>;
     userRoutes                 ?: Partial<AuthRouteMap>;
-    uid                        ?: string | null
+    uid                        ?: string | null;
     hasCheckedForSession        = false;
+    updatingAuth                = false;
 
     private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
 
@@ -113,6 +114,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         // Listen for changes to the auth state
         this.auth.onAuthStateChanged(async (user) => {
             try {
+                this.updatingAuth = true;
                 let eventName: AuthEvent;
                 if(user) {
                     this.firebaseUser = user;
@@ -128,6 +130,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                     eventName = "unauthenticated";
                 }
                 this.hasCheckedForSession = true;
+                this.updatingAuth = false;
 
                 // Run callbacks (if any)
                 this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
@@ -137,6 +140,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 } else {
                     console.warn("An error occurred on the auth state manager: ", err.message);
                     console.error(err);
+                    this.updatingAuth = false;
                 }
             }
         });

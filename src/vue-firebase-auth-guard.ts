@@ -29,9 +29,10 @@ class AuthGuardBootstrapper {
         });
 
         router.beforeEach((to, from, next) => {
-            if (!MainAuth.hasCheckedForSession) {
+            if (!MainAuth.hasCheckedForSession || MainAuth.updatingAuth) {
                 console.log(to);
-                // We haven't checked for a session yet, so wait before routing
+                // We haven't checked for a session yet,
+                // Or we are in the middle of updating auth, so wait before routing
                 guard.deferredRouting = { to, from, next };
             } else {
                 guard.resolveRoute(to, from, next);

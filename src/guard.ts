@@ -171,7 +171,7 @@ export class AuthGuardTracker {
      * @param next
      */
     beforeEach(fn: (authData: AuthStateSnapshot<any, any>, to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedLoadedGeneric, next: NavigationGuardNext) => void ) {
-        this.router.beforeEach((to, from, next) => {
+        this.router.beforeEach(async (to, from, next) => {
             fn(MainAuth.getSnapshot(), to, from, next);
         });
     }
