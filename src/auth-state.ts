@@ -49,7 +49,22 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.userModel = model;
         this.userType = typeName;
         console.log(`User model updated to ${String(typeName)}`, model);
-        this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_updated") );
+        this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_loaded") );
+    }
+
+    /**
+     * Updates the field values does NOT change the model type or trigger
+     * the model_updated event
+     * @param fields
+     */
+    updateUserModelFields(hash: Partial<TypeMap[any]>) {
+        if(!this.userModel) {
+            throw new Error("No user model defined");
+        }
+        for(let field in hash) {
+            if(hash[field] === undefined) continue;
+            this.userModel[field] = hash[field]
+        }
     }
 
     async setOverrideUserType<TypeName extends keyof TypeMap>(typeName?: TypeName) {
@@ -58,7 +73,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         }
         this.resolver.overrideType = typeName;
         await this.resolveUserModel();
-        const snap = this.getSnapshot("model_updated");
+        const snap = this.getSnapshot("model_loaded");
         this.onAuthStateChangedCallbacks.run( snap );
         return snap;
     }

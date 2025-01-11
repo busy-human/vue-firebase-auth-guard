@@ -92,7 +92,7 @@ export interface AuthLogOutOptions {
     cleanup?: boolean;
 }
 
-export type AuthEvent = "authenticated" | "unauthenticated" | "auth_checked" | "auth_error" | "model_updated" | "claims_updated" | "snapshot";
+export type AuthEvent = "authenticated" | "unauthenticated" | "auth_checked" | "auth_error" | "model_loaded" | "claims_updated" | "snapshot";
 
 export const AuthErrorMap: {[code: string]: string} = {
     'auth/invalid-email': "Invalid Email",
