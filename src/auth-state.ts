@@ -69,6 +69,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             if(hash[field] === undefined) continue;
             this.userModel[field] = hash[field]
         }
+        console.log("called to update user model", hash)
+        console.log("after updateUserModelFields", this.userModel);
     }
 
     async setOverrideUserType<TypeName extends keyof TypeMap>(typeName?: TypeName) {
@@ -91,22 +93,28 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
 
             if(this.resolver.overrideType) {
                 // Resolve with the override type
+                console.log("Resolver.overtype",this.resolver.overrideType);
                 this.userType = this.resolver.overrideType;
+                console.log("user type",this.userType);
                 this.userModel = await this.resolver.resolveForType(this.resolver.overrideType, this.firebaseUser, this.claims);
+                console.log("user model", this.userModel);
 
             } else {
                 // Resolve with the best match type
                 this.userType = await this.resolver.findMatchTypeName(this.firebaseUser, this.claims);
+                console.log("got usertype", this.userType);
                 if(!this.userType) throw new Error(`No user model found for user ${this.firebaseUser.uid}`);
                 this.userModel = await this.resolver.resolve(this.firebaseUser, this.claims, this.userType);
+                console.log("resolver ",this.userModel);
             }
             this.userRoutes = this.resolver.routesForType(this.userType);
+            console.log("Routes:",this.userRoutes);
         } else {
             this.userType = null;
             this.userModel = null;
             this.userRoutes = undefined;
         }
-
+        console.log("After resolve user Model:", this.userModel);
         return this.userModel;
     }
 
@@ -216,7 +224,7 @@ export function initializeAuthState<TypeMap extends UserModelMap>(auth: Auth, re
 
     MainAuth = new AuthStateClass(auth, resolver);
     MainAuth.startListener();
-
+    console.log("AuthState initialized", MainAuth);
     return MainAuth;
 }
 
