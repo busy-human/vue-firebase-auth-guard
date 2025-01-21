@@ -2,8 +2,6 @@ import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase
 import { AuthRouteMap, MatcherOption, MatcherPattern, UserModelMap, UserModelResolverOptions } from "./types.js";
 
 
-
-
 export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
     defaultModel?: keyof TypeMap;
@@ -13,6 +11,22 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         this.map = map;
         this.defaultModel = options?.defaultModel;
         this.overrideType = options?.overrideType;
+        this.validate();
+    }
+
+    validate() {
+        let countWithoutMatchers = 0;
+        for(const name in this.map) {
+            const def = this.map[name];
+            if(!def.matcher) {
+                countWithoutMatchers += 1;
+            }
+        }
+        if(countWithoutMatchers > 1) {
+            throw new Error("Only one model can have no matcher.");
+        } else if(countWithoutMatchers === 1 && !this.defaultModel) {
+            throw new Error("A default model must be defined if a model is defined without a matcher.");
+        }
     }
 
     testPatternFields(user: FirebaseUser, pattern: MatcherPattern, field: keyof MatcherPattern): boolean {
@@ -66,6 +80,7 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
                 return false;
             }
         }
+        // Claims is a nested field, so it needs special handling
         if("claims" in pattern) {
             for(let f in pattern.claims) {
                 match = this.testClaimFields(claims, pattern, f as keyof CustomClaimsToken);
@@ -77,12 +92,14 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         return match;
     }
 
-    checkTypeWithMatcher(user: FirebaseUser, claims: CustomClaimsToken, matcher: MatcherOption): boolean {
+    checkTypeWithMatcher(user: FirebaseUser, claims: CustomClaimsToken, matcher?: MatcherOption): boolean {
         if(typeof matcher === "function" && matcher(user, claims) === true) {
             return true;
         } else if(typeof matcher === "object" && this.matchWithPattern(user, claims, matcher)) {
             return true;
         } else if(matcher && (typeof matcher === "function" || typeof matcher === "object")) {
+            return false;
+        } else if(!matcher || matcher === undefined) {
             return false;
         } else {
             throw new Error(`Matcher invalid or not provided`);
@@ -119,6 +136,14 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
+    private getOrCreateModel<K extends keyof TypeMap>(match: TypeMap[K], user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["creator"]> > {
+        let model = match.getter(user, claims);
+        if(!model) {
+            model = match.creator(user, claims);
+        }
+        return model;
+    }
+
     routesForType<K extends keyof TypeMap>(type: K): Partial<AuthRouteMap> | undefined {
         if(!this.map[type]) {
             throw new Error(`User model ${String(type)} not found. Please check your spelling and UserModelMap`);
@@ -126,24 +151,24 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         return this.map[type].routes;
     }
 
-    resolve<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken,  hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
-        let match = this.findMatch(user, claims, hint);
+    resolve<K extends keyof TypeMap>(user: FirebaseUser, claims: CustomClaimsToken,  hint?: K): Promise< ReturnType<TypeMap[K]["creator"]> > {
+        const match = this.findMatch(user, claims, hint);
         if(!match) {
             throw new Error(`No user model found for user ${user.uid}`);
         }
-        return match.builder(user, claims);
+        return this.getOrCreateModel(match, user, claims);
     }
 
-    resolveForType<K extends keyof TypeMap>(typeName: K, user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["builder"]> > {
-        let match = this.map[typeName];
+    resolveForType<K extends keyof TypeMap>(typeName: K, user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["creator"]> > {
+        const match = this.map[typeName];
         if(!match) {
             throw new Error(`User type ${String(typeName)} not found. Please check your spelling and UserModelMap`);
         }
-        return match.builder(user, claims);
+        return this.getOrCreateModel(match, user, claims);
     }
 
-    async getClaimsAndResolve<K extends keyof TypeMap>(user: FirebaseUser, hint?: K): Promise< ReturnType<TypeMap[K]["builder"]> > {
-        let claims = (await user.getIdTokenResult()).claims;
+    async getClaimsAndResolve<K extends keyof TypeMap>(user: FirebaseUser, hint?: K): Promise< ReturnType<TypeMap[K]["getter"]> > {
+        const {claims} = (await user.getIdTokenResult());
         return this.resolve(user, claims, hint);
     }
 }

@@ -43,8 +43,9 @@ export interface UserModelResolverOptions<TypeMap extends UserModelMap> {
 export type MatcherOption = MatcherPattern | ((user: FirebaseUser, claims: CustomClaimsToken) => boolean);
 
 export interface UserModelDefinition<TypeMap extends UserModelMap, TypeName extends keyof TypeMap, M = TypeMap[TypeName]> {
-    matcher: MatcherOption;
-    builder: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
+    matcher?: MatcherOption;
+    getter: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M | undefined>;
+    creator: (user: FirebaseUser, claims: CustomClaimsToken) => Promise<M>;
     routes?: Partial< AuthRouteMap >;
 }
 
