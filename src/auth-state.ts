@@ -84,7 +84,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         return snap;
     }
 
-    async clearOverrideUserType() {
+    clearOverrideUserType() {
         return this.setOverrideUserType();
     }
 
