@@ -136,10 +136,10 @@ export class UserModelResolver<TypeMap extends UserModelMap> {
         }
     }
 
-    private getOrCreateModel<K extends keyof TypeMap>(match: TypeMap[K], user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["creator"]> > {
-        let model = match.getter(user, claims);
+    private async getOrCreateModel<K extends keyof TypeMap>(match: TypeMap[K], user: FirebaseUser, claims: CustomClaimsToken): Promise< ReturnType<TypeMap[K]["creator"]> > {
+        let model = await Promise.resolve(match.getter(user, claims));
         if(!model) {
-            model = match.creator(user, claims);
+            model = await Promise.resolve(match.creator(user, claims));
         }
         return model;
     }
