@@ -80,7 +80,12 @@ export class AuthGuardTracker {
             const rt = this.deferredRouting;
             delete this.deferredRouting;
             if (MainAuth.loggedIn && this.isLoginPage(rt.to)) {
-                await this.pushTo("postAuth");
+                const postAuth = this.pathFor("postAuth");
+                if(postAuth && typeof postAuth === "string") {
+                    rt.next( postAuth );
+                } else {
+                    rt.next();
+                }
             } else {
                 this.resolveRoute(rt.to, rt.from, rt.next);
             }
