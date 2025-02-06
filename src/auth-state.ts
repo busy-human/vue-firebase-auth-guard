@@ -144,7 +144,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
             } catch(err: any) {
                 if("code" in err) {
-                    this.logFirebaseError(err.code);
+                    this.logFirebaseError(err);
                 } else {
                     console.warn("An error occurred on the auth state manager: ", err.message);
                     console.error(err);
@@ -159,8 +159,9 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         return AuthErrorMap[errorCode] || errorCode;
     }
 
-    logFirebaseError(errorCode: string) {
-        const readable = this.convertAuthError(errorCode);
+    logFirebaseError(error: FirebaseError) {
+        const readable = this.convertAuthError(error.code);
+        console.error(error);
         console.warn(readable);
     }
 
