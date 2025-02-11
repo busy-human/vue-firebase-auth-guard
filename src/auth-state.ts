@@ -19,6 +19,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     updatingAuth                = false;
 
     private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
+	private onPreAuthLogoutHookCallbacks : CallbackController<void>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
         this.auth = auth;
@@ -29,6 +30,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.userType = null;
         this.uid = null;
         this.onAuthStateChangedCallbacks = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
+		this.onPreAuthLogoutHookCallbacks = new CallbackController();
     }
 
     get loggedIn() {
@@ -67,9 +69,9 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         }
         for(let field in hash) {
             if(hash[field] === undefined) continue;
-            this.userModel[field] = hash[field]
+            this.userModel[field] = hash[field];
         }
-        console.log("called to update user model", hash)
+        console.log("called to update user model", hash);
         console.log("after updateUserModelFields", this.userModel);
     }
 
@@ -169,6 +171,11 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.onAuthStateChangedCallbacks.add(cb, { once: options.once });
     }
 
+	/** Sets up a callback to be ran before full unauthenticating, for cleaning up firestore things */
+	onPreLogout(cb: Callback<void>, options: { once: boolean } = { once: false }) {
+		this.onPreAuthLogoutHookCallbacks.add(cb, options);
+	}
+
     async refreshClaims() {
         if(this.loggedIn && this.firebaseUser) {
             this.claims = (await this.firebaseUser.getIdTokenResult()).claims;
@@ -200,6 +207,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     }
 
     async logOut(options: AuthLogOutOptions = { cleanup: false }) {
+		this.onPreAuthLogoutHookCallbacks.run(null);
         await this.auth.signOut();
         this.firebaseUser = null;
         this.userModel = null;
